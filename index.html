@@ -6,347 +6,280 @@
 <title>Scout Vôlei</title>
 
 <style>
-body{font-family:Arial;background:#0f172a;color:white;text-align:center;margin:0;}
-#court{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:10px;}
-.card{background:#1e293b;border-radius:12px;padding:10px;}
-button{padding:8px;margin:4px;border-radius:8px;border:none;cursor:pointer;}
-.erro{background:#dc2626;color:white;}
-.acerto{background:#16a34a;color:white;}
+body{
+margin:0;
+font-family:Arial;
+background:#0f172a;
+color:white;
+text-align:center;
+}
+
+button{
+padding:8px;
+margin:4px;
+border:none;
+border-radius:8px;
+cursor:pointer;
+}
+
+.card{
+background:#1e293b;
+margin:5px;
+padding:10px;
+border-radius:10px;
+}
+
+#court{
+display:grid;
+grid-template-columns:repeat(3,1fr);
+gap:8px;
+padding:10px;
+}
 
 #overlay{
- position:fixed;top:0;left:0;width:100%;height:100%;
- background:rgba(0,0,0,0.8);
- display:flex;justify-content:center;align-items:center;
+position:fixed;
+inset:0;
+background:rgba(0,0,0,.8);
+display:none;
+align-items:center;
+justify-content:center;
 }
 
 #popup{
- display:grid;
- grid-template-columns:repeat(3,1fr);
- gap:8px;
- background:#1e293b;
- padding:15px;
- border-radius:10px;
+background:#1e293b;
+padding:15px;
+border-radius:10px;
+display:grid;
+grid-template-columns:repeat(2,1fr);
+gap:8px;
+max-width:90%;
 }
 
-.lista-item{
- background:#1e293b;
- margin:10px;
- padding:15px;
- border-radius:10px;
- cursor:pointer;
+.lista{
+background:#1e293b;
+padding:10px;
+border-radius:10px;
+cursor:pointer;
+margin:5px;
 }
 
-.placar{display:flex;justify-content:space-around;margin:10px;}
-.team{background:#1e293b;padding:10px;border-radius:10px;}
+.erro{background:#dc2626;color:white;}
+.acerto{background:#16a34a;color:white;}
+
+.top{
+display:flex;
+justify-content:space-around;
+padding:10px;
+}
 </style>
 </head>
 
 <body>
 
-<!-- MENU -->
 <div id="menu">
-<h1>🏐 Scout Vôlei</h1>
-<p style="opacity:0.5;">FEITO POR: JEAN LIMA</p>
-
-<button onclick="novo()">JOGO</button>
+<h2>🏐 Scout Vôlei</h2>
+<button onclick="novoJogo()">JOGO</button>
 <button onclick="abrirJogos()">MEUS JOGOS</button>
-<button onclick="abrirTimes()">TIMES</button>
-<button onclick="gerarPDF()">SALVAR DADOS EM PDF</button>
 </div>
 
-<!-- SELEÇÃO -->
-<div id="selectTime" style="display:none;"></div>
-<div id="selectLibero" style="display:none;"></div>
-
-<!-- JOGO -->
 <div id="app" style="display:none;">
-<button onclick="voltarMenu()">⬅</button>
 <h3 id="nomeJogo"></h3>
 
-<div class="placar">
-<div class="team">
-<h4>MEU TIME</h4>
-<div>Sets: <span id="setA">0</span></div>
-<button onclick="ponto('A')">+</button>
-<button onclick="tirarPonto('A')">-</button>
-<div id="scoreA">0</div>
-</div>
-
-<div>X</div>
-
-<div class="team">
-<h4>TIME ADVERSÁRIO</h4>
-<div>Sets: <span id="setB">0</span></div>
-<button onclick="ponto('B')">+</button>
-<button onclick="tirarPonto('B')">-</button>
-<div id="scoreB">0</div>
-</div>
+<div class="top">
+<div>🏆 <span id="scoreA">0</span></div>
+<div>VS</div>
+<div>🏆 <span id="scoreB">0</span></div>
 </div>
 
 <div id="court"></div>
 
 <button onclick="rodar()">🔄 Rodar</button>
-<button onclick="finalizar()">🏁 Finalizar</button>
-
-<div id="bench"></div>
+<button onclick="finalizar()">Finalizar</button>
 </div>
 
-<!-- OVERLAY -->
-<div id="overlay" style="display:none;">
- <div id="popup"></div>
-</div>
-
-<!-- TIMES -->
-<div id="times" style="display:none;">
-<button onclick="voltarMenu()">⬅</button>
-<div id="listaJogadores"></div>
-</div>
-
-<!-- JOGOS -->
 <div id="listaJogos" style="display:none;"></div>
 
-<!-- DETALHE -->
-<div id="detalhe" style="display:none;">
-<h2 id="tituloDetalhe"></h2>
-<div id="stats"></div>
-<button onclick="voltarMenu()">⬅</button>
+<div id="overlay">
+<div id="popup"></div>
 </div>
-
-<script src="data.js"></script>
-<script src="utils.js"></script>
-<script src="teams.js"></script>
-<script src="gameStats.js"></script>
-<script src="libero.js"></script>
-<script src="pdf.js"></script>
 
 <script>
 let jogo=null;
 
-/* ================= INICIAR ================= */
-function novo(){
- let nome=prompt("Nome da partida:");
- if(!nome)return;
+/* ================= CRIAR JOGO ================= */
+function novoJogo(){
+let nome=prompt("Nome da partida:");
+if(!nome)return;
 
- let times=pegarTimes();
- if(times.length==0){ alert("Crie um time"); return; }
+jogo={
+nome,
+scoreA:0,
+scoreB:0,
+setA:0,
+setB:0,
+sets:[],
+players:mockPlayers()
+};
 
- menu.style.display="none";
- selectTime.style.display="block";
+menu.style.display="none";
+app.style.display="block";
 
- selectTime.innerHTML=`
- <h2>Escolha o Time</h2>
- ${times.map((t,i)=>`
-  <div class="lista-item" onclick="escolherTime(${i},'${nome}')">
-   ${t.nome}
-  </div>
- `).join("")}
- `;
+nomeJogo.innerText=nome;
+render();
 }
 
-/* ================= ESCOLHER TIME ================= */
-function escolherTime(i,nome){
- let time=pegarTimes()[i];
-
- let players=time.players.map(p=>({...JSON.parse(JSON.stringify(p)),posicaoQuadra:0}));
-
- jogo={nome,players,scoreA:0,scoreB:0,setA:0,setB:0,sets:[]};
-
- selectTime.style.display="none";
- selectLibero.style.display="block";
-
- selectLibero.innerHTML=`
- <h2>Escolha o Líbero</h2>
- ${players.map((p,i)=>`
-  <div class="lista-item" onclick="definirLibero(${i})">
-   #${p.numero} ${p.nome} (${p.posicao})
-  </div>
- `).join("")}
- `;
-}
-
-function definirLibero(i){
- LIBERO=jogo.players[i];
-
- selectLibero.style.display="none";
- app.style.display="block";
-
- nomeJogo.innerText=jogo.nome;
- render();
+/* ================= PLAYERS ================= */
+function mockPlayers(){
+return [
+{nome:"P1",pos:"Lev",posQuadra:1,ac:{},er:{}},
+{nome:"P2",pos:"Pon",posQuadra:2,ac:{},er:{}},
+{nome:"P3",pos:"Cen",posQuadra:3,ac:{},er:{}},
+{nome:"P4",pos:"Opo",posQuadra:4,ac:{},er:{}},
+{nome:"P5",pos:"Lib",posQuadra:5,ac:{},er:{}},
+{nome:"P6",pos:"Cen",posQuadra:6,ac:{},er:{}}
+];
 }
 
 /* ================= RENDER ================= */
 function render(){
- let ordem=[4,3,2,5,6,1];
- court.innerHTML="";
+let court=document.getElementById("court");
+court.innerHTML="";
 
- ordem.forEach(pos=>{
-  let p=jogo.players.find(x=>x.posicaoQuadra==pos);
+for(let i=1;i<=6;i++){
+let p=jogo.players.find(x=>x.posQuadra==i);
 
-  court.innerHTML+=`
-  <div class="card">
-   ${p?`
-    <b>#${p.numero} ${p.nome}</b><br>
-    <small>${p.posicao}</small><br>
+court.innerHTML+=`
+<div class="card">
+${p?`
+<b>${p.nome}</b><br>
+<small>${p.pos}</small><br>
 
-    <button class="erro" onclick="menuFund(${pos},'erro')">Erro</button>
-    <button class="acerto" onclick="menuFund(${pos},'acerto')">Acerto</button>
-    <button onclick="sub(${pos})">🔁</button>
-   `:`
-    <b>Pos ${pos}</b><br>
-    <button onclick="abrirSelecao(${pos})">+ Jogador</button>
-   `}
-  </div>`;
- });
-
- bench.innerHTML=jogo.players.filter(p=>p.posicaoQuadra==0)
- .map(p=>`<div>#${p.numero} ${p.nome}</div>`).join("");
-
- scoreA.innerText=jogo.scoreA;
- scoreB.innerText=jogo.scoreB;
- setA.innerText=jogo.setA;
- setB.innerText=jogo.setB;
+<button class="acerto" onclick="acerto()">Acerto</button>
+<button class="erro" onclick="erroMenu(${i})">Erro</button>
+`:`<button onclick="colocar(${i})">+ Jogador</button>`}
+</div>`;
 }
 
-/* ================= FUNDAMENTOS ================= */
-function menuFund(pos,tipo){
- overlay.style.display="flex";
-
- let f=["saque","recepcao","defesa","levantamento","ataque","bloqueio"];
-
- popup.innerHTML=f.map(x=>`
-  <button onclick="registrar(${pos},'${tipo}','${x}')">${x}</button>
- `).join("");
+scoreA.innerText=jogo.scoreA;
+scoreB.innerText=jogo.scoreB;
 }
 
-/* ================= ERROS INTELIGENTES ================= */
-function registrar(pos,tipo,f){
+/* ================= POSIÇÃO ================= */
+function colocar(pos){
+overlay.style.display="flex";
 
- if(tipo=="erro" && ["recepcao","defesa","levantamento"].includes(f)){
-  popup.innerHTML=`
-   <button onclick="erroNormal(${pos},'${f}')">❌ Erro</button>
-   <button onclick="erroFatal(${pos},'${f}')">💥 Erro Fatal</button>
-  `;
-  return;
- }
+popup.innerHTML=jogo.players.map((p,i)=>`
+<div class="lista" onclick="setPos(${i},${pos})">
+${p.nome}<br>${p.pos}
+</div>
+`).join("");
+}
 
- aplicarAcao(pos,tipo,f,true);
+function setPos(i,pos){
+jogo.players[i].posQuadra=pos;
+overlay.style.display="none";
+render();
+}
+
+/* ================= ERRO MENU ================= */
+function erroMenu(pos){
+overlay.style.display="flex";
+
+popup.innerHTML=["saque","recepcao","defesa","levantamento","ataque","bloqueio"]
+.map(f=>`
+<button onclick="erroTipo(${pos},'${f}')">${f}</button>
+`).join("");
+}
+
+/* ================= ERRO NORMAL/FATAL ================= */
+function erroTipo(pos,f){
+overlay.style.display="flex";
+
+popup.innerHTML=`
+<button onclick="erroNormal(${pos},'${f}')">❌ Erro</button>
+<button onclick="erroFatal(${pos},'${f}')">💥 Fatal</button>
+`;
 }
 
 function erroNormal(pos,f){
- let p=jogo.players.find(x=>x.posicaoQuadra==pos);
- p.erro[f]++;
- overlay.style.display="none";
- render();
+let p=jogo.players.find(x=>x.posQuadra==pos);
+if(!p.er) p.er={};
+p.er[f]=(p.er[f]||0)+1;
+
+overlay.style.display="none";
+render();
 }
 
 function erroFatal(pos,f){
- let p=jogo.players.find(x=>x.posicaoQuadra==pos);
- p.erro[f]++;
+let p=jogo.players.find(x=>x.posQuadra==pos);
+if(!p.er) p.er={};
+p.er[f]=(p.er[f]||0)+1;
 
- jogo.scoreB++;
- verificarSet();
+jogo.scoreB++;
+setCheck();
 
- overlay.style.display="none";
- render();
+overlay.style.display="none";
+render();
 }
 
-function aplicarAcao(pos,tipo,f,pontuar){
- let p=jogo.players.find(x=>x.posicaoQuadra==pos);
-
- if(tipo=="erro"){
-  p.erro[f]++;
- }else{
-  p.acerto[f]++;
-  jogo.scoreA++;
- }
-
- overlay.style.display="none";
- render();
-}
-
-/* ================= OUTROS ================= */
-function sub(pos){
- overlay.style.display="flex";
-
- popup.innerHTML=jogo.players.map((p,i)=>p.posicaoQuadra==0?`
- <div class="lista-item" onclick="trocar(${pos},${i})">
-  ${p.nome}
- </div>`:"").join("");
-}
-
-function trocar(pos,i){
- let atual=jogo.players.find(p=>p.posicaoQuadra==pos);
- atual.posicaoQuadra=0;
- jogo.players[i].posicaoQuadra=pos;
-
- overlay.style.display="none";
- render();
-}
-
-function abrirSelecao(pos){
- overlay.style.display="flex";
-
- popup.innerHTML=jogo.players.map((p,i)=>p.posicaoQuadra==0?`
- <div class="lista-item" onclick="colocar(${pos},${i})">
-  ${p.nome}
- </div>`:"").join("");
-}
-
-function colocar(pos,i){
- jogo.players[i].posicaoQuadra=pos;
- overlay.style.display="none";
- render();
-}
-
-function rodar(){
- jogo.players.forEach(p=>{
-  if(p.posicaoQuadra>0){
-   p.posicaoQuadra=p.posicaoQuadra==1?6:p.posicaoQuadra-1;
-  }
- });
- render();
+/* ================= ACERTO ================= */
+function acerto(){
+jogo.scoreA++;
+setCheck();
+render();
 }
 
 /* ================= SET ================= */
-function verificarSet(){
- if((jogo.scoreA>=25||jogo.scoreB>=25)&&Math.abs(jogo.scoreA-jogo.scoreB)>=2){
-  jogo.sets.push({meuTime:jogo.scoreA,adversario:jogo.scoreB});
+function setCheck(){
+if((jogo.scoreA>=25||jogo.scoreB>=25)&&Math.abs(jogo.scoreA-jogo.scoreB)>=2){
+jogo.sets.push({a:jogo.scoreA,b:jogo.scoreB});
 
-  if(jogo.scoreA>jogo.scoreB) jogo.setA++;
-  else jogo.setB++;
+if(jogo.scoreA>jogo.scoreB)jogo.setA++;
+else jogo.setB++;
 
-  jogo.scoreA=0;
-  jogo.scoreB=0;
- }
+jogo.scoreA=0;
+jogo.scoreB=0;
+}
 }
 
-/* ================= FINAL ================= */
+/* ================= RODIZIO ================= */
+function rodar(){
+jogo.players.forEach(p=>{
+if(p.posQuadra>0)
+p.posQuadra=p.posQuadra==1?6:p.posQuadra-1;
+});
+render();
+}
+
+/* ================= SALVAR ================= */
 function finalizar(){
- salvarJogo(jogo);
- abrirResumoJogo(jogo);
+let jogos=JSON.parse(localStorage.getItem("jogos")||"[]");
+jogos.push(jogo);
+localStorage.setItem("jogos",JSON.stringify(jogos));
+
+abrirJogos();
 }
 
+/* ================= MEUS JOGOS ================= */
 function abrirJogos(){
- let jogos=pegarJogos();
+menu.style.display="none";
+app.style.display="none";
+listaJogos.style.display="block";
 
- menu.style.display="none";
- listaJogos.style.display="block";
+let jogos=JSON.parse(localStorage.getItem("jogos")||"[]");
 
- listaJogos.innerHTML=jogos.map((j,i)=>`
- <div class="lista-item" onclick="abrirResumoJogo(pegarJogos()[${i}])">
-  ${j.nome} (${j.setA}x${j.setB})
- </div>
- `).join("");
+listaJogos.innerHTML=`
+<button onclick="voltar()">Voltar</button>
+`+jogos.map(j=>`
+<div class="lista">
+${j.nome} (${j.setA}x${j.setB})
+</div>
+`).join("");
 }
 
-function abrirTimes(){
- menu.style.display="none";
- times.style.display="block";
- renderTimes();
-}
-
-function voltarMenu(){
- location.reload();
+/* ================= VOLTAR ================= */
+function voltar(){
+location.reload();
 }
 </script>
 
